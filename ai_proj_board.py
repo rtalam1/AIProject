@@ -25,7 +25,7 @@ markers = []
 game_over = False
 winner = 0
 
-# setup a rectangle for "Play Again" Option
+# set up a rectangle for "Play Again" Option
 again_rect = Rect(screen_width // 2 - 80, screen_height // 2, 160, 50)
 
 # create empty 3 x 3 list to represent the grid
@@ -33,8 +33,137 @@ for x in range(3):
     row = [0] * 3
     markers.append(row)
 
-def minimax():
-    #this wihere we should implement mini max
+
+def evaluateBoard(board):
+    x_pos = 0
+    for x in markers:
+        # check columns
+        if sum(x) == 3:
+            return 10
+        if sum(x) == -3:
+            return -10
+        # check rows
+        if markers[0][x_pos] + markers[1][x_pos] + markers[2][x_pos] == 3:
+            return 10
+        if markers[0][x_pos] + markers[1][x_pos] + markers[2][x_pos] == -3:
+            return -10
+        x_pos += 1
+
+    # check cross
+    if markers[0][0] + markers[1][1] + markers[2][2] == 3 or markers[2][0] + markers[1][1] + markers[0][2] == 3:
+        return 10
+    if markers[0][0] + markers[1][1] + markers[2][2] == -3 or markers[2][0] + markers[1][1] + markers[0][2] == -3:
+        return -10
+    return 0
+
+
+def movesLeft(board):
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                return True
+    return False
+
+def alpha_beta(board, depth, isMax, alpha, beta):
+    score = evaluateBoard(board)
+    if score == 10:
+        return score
+    if score == -10:
+        return score
+    if movesLeft(board) == False:
+        return 0
+
+    if isMax:
+        best = -1000
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == 0:
+                    board[i][j] = 1
+                    best = max(best, alpha_beta(board, depth + 1, not isMax, alpha, beta))
+                    alpha = max(alpha, best)
+                    board[i][j] = 0
+                    if beta <= alpha:
+                        break
+        return best
+    else:
+        best = 1000
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == 0:
+                    board[i][j] = -1
+                    best = min(best, alpha_beta(board, depth + 1, not isMax, alpha, beta))
+                    beta = min(beta, best)
+                    board[i][j] = 0
+                    if beta <= alpha:
+                        break
+        return best
+
+
+def minimax(board, depth, isMax):
+    score = evaluateBoard(board)
+    if score == 10:
+        return score
+    if score == -10:
+        return score
+    if movesLeft(board) == False:
+        return 0
+
+    if isMax:
+        best = -1000
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == 0:
+                    board[i][j] = 1
+                    best = max(best, minimax(board, depth + 1, isMax))
+                    board[i][j] = 0
+        return best
+    else:
+        best = 1000
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == 0:
+                    board[i][j] = -1
+                    best = min(best, minimax(board, depth + 1, not isMax))
+                    board[i][j] = 0
+        return best
+
+
+def generateBestMove(board):
+    best_value = -1000
+    best_move = (-1, -1)
+
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                board[i][j] = 1
+                move_value = minimax(board, 0, False)
+                board[i][j] = 0
+                if move_value > best_value:
+                    best_move = (i, j)
+                    best_value = move_value
+    print(f'The value of the best Move is {best_move}')
+    print()
+    return best_move
+
+def generateBestMoveAB(board):
+    best_value = -1000
+    best_move = (-1, -1)
+    alpha = 0
+    beta = 0
+
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                board[i][j] = 1
+                move_value = alpha_beta(board, 0, False,alpha,beta)
+                board[i][j] = 0
+                if move_value > best_value:
+                    best_move = (i, j)
+                    best_value = move_value
+    print(f'AB: The value of the best Move is {best_move}')
+    print()
+    return best_move
+
 
 def draw_board():
     bg = (255, 255, 210)
@@ -146,7 +275,12 @@ while run:
                 if markers[cell_x][cell_y] == 0:
                     markers[cell_x][cell_y] = player
                     player *= -1
-                    #change this player swap to minimax algorithm and alpha beta pruning
+                    if player == -1:
+                        move = generateBestMove(markers)
+                        moveAB = generateBestMoveAB(markers)
+                        print(f'AB: Best options is Col: {moveAB[0] + 1} ,Row: {moveAB[1] + 1}')
+                        print(f'Best options is Col: {move[0] + 1} ,Row: {move[1] + 1}')
+                    # change this player swap to minimax algorithm and alpha beta pruning
                     check_game_over()
 
     # check if game has been won
@@ -172,5 +306,4 @@ while run:
 
     # update display
     pygame.display.update()
-
 pygame.quit()
